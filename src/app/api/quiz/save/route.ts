@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Verificar se já existe uma resposta para esse usuário
-    const { data: existingResponse, error: checkError } = await supabase
+    const { data: existingResponse, error: checkError } = await supabaseAdmin
       .from('quiz_responses')
       .select('id')
       .eq('user_email', userEmail)
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     if (existingResponse) {
       // Atualizar resposta existente
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from('quiz_responses')
         .update(quizData)
         .eq('user_email', userEmail);
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Inserir nova resposta
-      const { error: insertError } = await supabase
+      const { error: insertError } = await supabaseAdmin
         .from('quiz_responses')
         .insert(quizData);
 
