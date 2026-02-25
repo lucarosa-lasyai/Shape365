@@ -158,6 +158,7 @@ export default function Shape365() {
 
     // Salvar respostas do quiz no Supabase
     try {
+      console.log('Enviando respostas do quiz para API...');
       const response = await fetch('/api/quiz/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -167,13 +168,18 @@ export default function Shape365() {
         }),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        console.error('Erro ao salvar respostas do quiz:', await response.text());
+        console.error('Erro ao salvar respostas do quiz:', responseData);
+        alert(`Erro ao salvar: ${responseData.error || 'Erro desconhecido'}\n\nDetalhes: ${JSON.stringify(responseData.details || {})}`);
       } else {
-        console.log('Respostas do quiz salvas com sucesso!');
+        console.log('Respostas do quiz salvas com sucesso!', responseData);
+        alert('Respostas salvas com sucesso no banco de dados!');
       }
     } catch (error) {
       console.error('Erro ao salvar respostas do quiz:', error);
+      alert(`Erro de conexão: ${error}`);
     }
 
     // Ir para tela de resultado após completar quiz
