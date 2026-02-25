@@ -312,6 +312,20 @@ export default function Shape365() {
     alert('Funcionalidade de edição de perfil em desenvolvimento');
   };
 
+  const handleRetakeQuiz = () => {
+    // Resetar o quiz para permitir refazer
+    if (userProfile) {
+      const updatedProfile = {
+        ...userProfile,
+        quizCompleted: false,
+        quizAnswers: undefined,
+      };
+      setUserProfile(updatedProfile);
+      localStorage.setItem('shape365-profile', JSON.stringify(updatedProfile));
+      setCurrentScreen('quiz');
+    }
+  };
+
   // ==================== RENDER ====================
   const showBottomNav = ['home', 'challenges', 'checkin', 'community', 'profile'].includes(currentScreen as string);
 
@@ -345,6 +359,7 @@ export default function Shape365() {
           onSubscribe={handleSubscribe}
           onBack={() => setCurrentScreen('result')}
           userEmail={userProfile?.email}
+          onRetakeQuiz={handleRetakeQuiz}
         />
       )}
 

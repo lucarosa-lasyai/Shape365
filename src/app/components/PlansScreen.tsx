@@ -7,9 +7,10 @@ interface PlansScreenProps {
   onSubscribe: (plan: 'monthly' | 'semester' | 'annual') => void;
   onBack?: () => void;
   userEmail?: string;
+  onRetakeQuiz?: () => void;
 }
 
-export default function PlansScreen({ onSubscribe, onBack, userEmail }: PlansScreenProps) {
+export default function PlansScreen({ onSubscribe, onBack, userEmail, onRetakeQuiz }: PlansScreenProps) {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'semester' | 'annual'>('annual');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -114,7 +115,7 @@ export default function PlansScreen({ onSubscribe, onBack, userEmail }: PlansScr
                 <ArrowLeft className="w-6 h-6 text-gray-600" />
               </button>
             )}
-            <div>
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-900">
                 Escolha Seu Plano
               </h1>
@@ -122,6 +123,14 @@ export default function PlansScreen({ onSubscribe, onBack, userEmail }: PlansScr
                 Comece sua transformação hoje mesmo
               </p>
             </div>
+            {onRetakeQuiz && (
+              <button
+                onClick={onRetakeQuiz}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Refazer Quiz
+              </button>
+            )}
           </div>
         </div>
       </div>
