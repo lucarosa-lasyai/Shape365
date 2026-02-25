@@ -140,7 +140,7 @@ export default function Shape365() {
     }
   };
 
-  const handleQuizComplete = (quizAnswers: QuizAnswers) => {
+  const handleQuizComplete = async (quizAnswers: QuizAnswers) => {
     // Atualizar perfil com respostas do quiz
     const updatedProfile: UserProfile = {
       ...userProfile!,
@@ -152,10 +152,30 @@ export default function Shape365() {
       height: quizAnswers.height,
       goal: quizAnswers.mainGoal,
     };
-    
+
     setUserProfile(updatedProfile);
     localStorage.setItem('shape365-profile', JSON.stringify(updatedProfile));
-    
+
+    // Salvar respostas do quiz no Supabase
+    try {
+      const response = await fetch('/api/quiz/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userEmail: userProfile!.email,
+          quizAnswers: quizAnswers,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Erro ao salvar respostas do quiz:', await response.text());
+      } else {
+        console.log('Respostas do quiz salvas com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar respostas do quiz:', error);
+    }
+
     // Ir para tela de resultado após completar quiz
     setCurrentScreen('result');
   };
