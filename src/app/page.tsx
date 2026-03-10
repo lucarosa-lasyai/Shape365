@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Screen, Category, Workout, Challenge, Post, UserProfile, Comment, QuizAnswers } from './types';
-import { workoutsData, challengesData, postsData, getWorkoutById, getChallengeById } from './data';
+import { challengesData, postsData } from './data';
 
 // Components
 import LandingScreen from './components/LandingScreen';
@@ -377,8 +377,6 @@ export default function Shape365() {
   };
 
   // ==================== RENDER ====================
-  const showBottomNav = ['home', 'challenges', 'checkin', 'community', 'profile'].includes(currentScreen as string);
-
   return (
     <>
       {currentScreen === 'landing' && (

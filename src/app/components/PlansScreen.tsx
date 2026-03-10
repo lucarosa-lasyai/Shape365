@@ -10,7 +10,7 @@ interface PlansScreenProps {
   onRetakeQuiz?: () => void;
 }
 
-export default function PlansScreen({ onSubscribe, onBack, userEmail, onRetakeQuiz }: PlansScreenProps) {
+export default function PlansScreen({ onBack, userEmail, onRetakeQuiz }: PlansScreenProps) {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'semester' | 'annual'>('annual');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -258,7 +258,7 @@ export default function PlansScreen({ onSubscribe, onBack, userEmail, onRetakeQu
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
           <h3 className="font-semibold text-blue-900 mb-2">Como funciona o pagamento?</h3>
           <ol className="text-sm text-blue-800 space-y-2">
-            <li>1. Clique em "Assinar Plano" e você será redirecionado para o Mercado Pago</li>
+            <li>1. Clique em &quot;Assinar Plano&quot; e você será redirecionado para o Mercado Pago</li>
             <li>2. Complete o pagamento de forma segura na plataforma do Mercado Pago</li>
             <li>3. Após a aprovação, seu acesso será liberado automaticamente</li>
             <li>4. Você receberá um email de confirmação e poderá acessar todos os recursos</li>

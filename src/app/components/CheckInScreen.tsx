@@ -3,9 +3,23 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Send, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
+interface UserProfileData {
+  name?: string;
+  age?: string;
+  weight?: string;
+  height?: string;
+  goal?: string;
+  hasSubscription?: boolean;
+  quizAnswers?: {
+    experienceLevel?: string;
+    daysPerWeek?: string;
+    timePerWorkout?: string;
+  };
+}
+
 interface CheckInScreenProps {
   onBack: () => void;
-  userProfile: any;
+  userProfile: UserProfileData | null;
 }
 
 interface CheckInData {
@@ -240,9 +254,9 @@ export default function CheckInScreen({ onBack, userProfile }: CheckInScreenProp
               
               <p className="text-sm text-gray-400 mb-2">Exemplos de perguntas válidas:</p>
               <ul className="space-y-1 text-gray-300 text-sm mb-4">
-                <li className="pl-4">• "Devo aumentar a carga nesse exercício?"</li>
-                <li className="pl-4">• "Como melhorar meu foco nos treinos?"</li>
-                <li className="pl-4">• "Treinar 3 ou 4 vezes por semana nesse momento?"</li>
+                <li className="pl-4">• &quot;Devo aumentar a carga nesse exercício?&quot;</li>
+                <li className="pl-4">• &quot;Como melhorar meu foco nos treinos?&quot;</li>
+                <li className="pl-4">• &quot;Treinar 3 ou 4 vezes por semana nesse momento?&quot;</li>
               </ul>
 
               <div className="border-t border-gray-700 pt-4 mt-4">
