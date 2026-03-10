@@ -97,25 +97,72 @@ export default function Shape365() {
     setCurrentScreen('landing');
   };
 
-  const handleAuthComplete = (name: string, email: string) => {
-    // Verificar se usuário já existe (simulação)
-    const savedProfile = localStorage.getItem('shape365-profile');
-    
-    if (savedProfile && authMode === 'login') {
-      // Login - usuário existente
-      const profile = JSON.parse(savedProfile);
-      setUserProfile(profile);
-      
-      // Lógica de redirecionamento para login
-      if (profile.hasSubscription) {
-        // Tem assinatura -> ir para home
+  const handleAuthComplete = async (name: string, email: string) => {
+    if (authMode === 'login') {
+      // Login - verificar quiz no Supabase (fonte de verdade)
+      const baseProfile: UserProfile = {
+        name,
+        email,
+        age: '',
+        weight: '',
+        height: '',
+        birthDate: '',
+        goal: '',
+        quizCompleted: false,
+        hasSubscription: false,
+      };
+
+      // Recuperar perfil local como base (pode ter dados extras como assinatura)
+      const savedProfile = localStorage.getItem('shape365-profile');
+      const localProfile = savedProfile ? JSON.parse(savedProfile) : null;
+      const mergedProfile = localProfile?.email === email ? { ...baseProfile, ...localProfile } : baseProfile;
+
+      try {
+        // Verificar quiz no Supabase
+        const quizRes = await fetch('/api/quiz/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userEmail: email }),
+        });
+
+        if (quizRes.ok) {
+          const { quizCompleted, quizAnswers } = await quizRes.json();
+
+          const updatedProfile: UserProfile = {
+            ...mergedProfile,
+            quizCompleted,
+            quizAnswers: quizAnswers || mergedProfile.quizAnswers,
+            age: quizAnswers?.age || mergedProfile.age,
+            weight: quizAnswers?.weight || mergedProfile.weight,
+            height: quizAnswers?.height || mergedProfile.height,
+            goal: quizAnswers?.mainGoal || mergedProfile.goal,
+          };
+
+          setUserProfile(updatedProfile);
+          localStorage.setItem('shape365-profile', JSON.stringify(updatedProfile));
+
+          if (updatedProfile.hasSubscription) {
+            setCurrentScreen('home');
+            setActiveTab('home');
+          } else if (quizCompleted) {
+            setCurrentScreen('plans');
+          } else {
+            setCurrentScreen('quiz');
+          }
+          return;
+        }
+      } catch (error) {
+        console.error('Erro ao verificar quiz no Supabase:', error);
+      }
+
+      // Fallback: usar dados locais se a API falhar
+      setUserProfile(mergedProfile);
+      if (mergedProfile.hasSubscription) {
         setCurrentScreen('home');
         setActiveTab('home');
-      } else if (profile.quizCompleted) {
-        // Quiz completo mas sem assinatura -> ir para planos
+      } else if (mergedProfile.quizCompleted) {
         setCurrentScreen('plans');
       } else {
-        // Quiz não completado -> mostrar quiz
         setCurrentScreen('quiz');
       }
     } else {
@@ -131,10 +178,10 @@ export default function Shape365() {
         quizCompleted: false,
         hasSubscription: false,
       };
-      
+
       setUserProfile(newProfile);
       localStorage.setItem('shape365-profile', JSON.stringify(newProfile));
-      
+
       // Novo usuário sempre vai para o quiz
       setCurrentScreen('quiz');
     }
@@ -172,14 +219,11 @@ export default function Shape365() {
 
       if (!response.ok) {
         console.error('Erro ao salvar respostas do quiz:', responseData);
-        alert(`Erro ao salvar: ${responseData.error || 'Erro desconhecido'}\n\nDetalhes: ${JSON.stringify(responseData.details || {})}`);
       } else {
         console.log('Respostas do quiz salvas com sucesso!', responseData);
-        alert('Respostas salvas com sucesso no banco de dados!');
       }
     } catch (error) {
       console.error('Erro ao salvar respostas do quiz:', error);
-      alert(`Erro de conexão: ${error}`);
     }
 
     // Ir para tela de resultado após completar quiz
