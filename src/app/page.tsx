@@ -117,6 +117,17 @@ export default function Shape365() {
       const localProfile = savedProfile ? JSON.parse(savedProfile) : null;
       const mergedProfile = localProfile?.email === email ? { ...baseProfile, ...localProfile } : baseProfile;
 
+      // Garantir que o perfil existe na tabela profiles (upsert silencioso)
+      try {
+        await fetch('/api/user/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email }),
+        });
+      } catch (err) {
+        console.error('Erro ao garantir perfil no login:', err);
+      }
+
       try {
         // Verificar quiz no Supabase
         const quizRes = await fetch('/api/quiz/check', {
@@ -181,6 +192,17 @@ export default function Shape365() {
 
       setUserProfile(newProfile);
       localStorage.setItem('shape365-profile', JSON.stringify(newProfile));
+
+      // Registrar usuário na tabela profiles
+      try {
+        await fetch('/api/user/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email }),
+        });
+      } catch (err) {
+        console.error('Erro ao registrar perfil:', err);
+      }
 
       // Novo usuário sempre vai para o quiz
       setCurrentScreen('quiz');

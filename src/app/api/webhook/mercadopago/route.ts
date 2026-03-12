@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
-// Tipos do Mercado Pago
 interface MercadoPagoNotification {
   id: string;
   live_mode: boolean;
@@ -41,14 +40,13 @@ export async function POST(request: NextRequest) {
   try {
     const body: MercadoPagoNotification = await request.json();
 
-    console.log('📩 Webhook recebido do Mercado Pago:', body);
+    console.log('📩 Webhook recebido do Mercado Pago:', JSON.stringify(body));
 
-    // Verificar se é uma notificação de pagamento
+    // Ignorar notificações que não são de pagamento
     if (body.type !== 'payment') {
       return NextResponse.json({ message: 'Tipo de notificação ignorado' }, { status: 200 });
     }
 
-    // Buscar detalhes do pagamento na API do Mercado Pago
     const paymentId = body.data.id;
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
 
@@ -57,7 +55,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Configuração inválida' }, { status: 500 });
     }
 
-    // Buscar informações do pagamento
+    // Buscar detalhes do pagamento na API do Mercado Pago
     const paymentResponse = await fetch(
       `https://api.mercadopago.com/v1/payments/${paymentId}`,
       {
@@ -79,12 +77,64 @@ export async function POST(request: NextRequest) {
       status: payment.status,
       email: payment.payer.email,
       amount: payment.transaction_amount,
+      external_reference: payment.external_reference,
+      metadata: payment.metadata,
     });
 
-    // Processar apenas pagamentos aprovados
+    // Determinar email do usuário (prioridade: metadata > external_reference > payer.email)
+    const userEmail =
+      payment.metadata?.user_email ||
+      payment.external_reference ||
+      payment.payer.email;
+
+    const planType = payment.metadata?.plan_type || 'monthly';
+
+    // Registrar pagamento no histórico (independente do status)
+    const { error: paymentRecordError } = await supabaseAdmin
+      .from('subscription_payments')
+      .upsert({
+        user_email: userEmail,
+        mercadopago_payment_id: payment.id.toString(),
+        plan_type: planType,
+        amount: payment.transaction_amount,
+        status: payment.status,
+        payment_date: payment.date_approved || new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      }, {
+        onConflict: 'mercadopago_payment_id',
+      });
+
+    if (paymentRecordError) {
+      console.error('❌ Erro ao registrar pagamento no histórico:', paymentRecordError);
+    } else {
+      console.log('✅ Pagamento registrado no histórico');
+    }
+
+    // Processar pagamentos aprovados
     if (payment.status === 'approved') {
-      const userEmail = payment.metadata?.user_email || payment.payer.email;
-      const planType = payment.metadata?.plan_type || 'monthly';
+      // Garantir que o perfil existe na tabela profiles
+      const { data: existingProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', userEmail)
+        .single();
+
+      if (!existingProfile) {
+        const { error: profileError } = await supabaseAdmin
+          .from('profiles')
+          .insert({
+            email: userEmail,
+            full_name: userEmail.split('@')[0],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (profileError) {
+          console.error('❌ Erro ao criar perfil:', profileError);
+        } else {
+          console.log('✅ Perfil criado para:', userEmail);
+        }
+      }
 
       // Calcular data de expiração baseada no plano
       const expirationDate = new Date();
@@ -98,25 +148,49 @@ export async function POST(request: NextRequest) {
         case 'annual':
           expirationDate.setFullYear(expirationDate.getFullYear() + 1);
           break;
+        default:
+          expirationDate.setMonth(expirationDate.getMonth() + 1);
       }
 
-      // Criar ou atualizar assinatura no Supabase
-      const { data: subscription, error: subError } = await supabaseAdmin
+      // Verificar se já existe assinatura para esse email
+      const { data: existingSub } = await supabaseAdmin
         .from('subscriptions')
-        .upsert({
-          user_email: userEmail,
-          plan_type: planType,
-          status: 'active',
-          payment_id: payment.id.toString(),
-          amount: payment.transaction_amount,
-          expires_at: expirationDate.toISOString(),
-          mercadopago_payment_id: payment.id.toString(),
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_email',
-        })
-        .select()
+        .select('id')
+        .eq('user_email', userEmail)
         .single();
+
+      let subscription = null;
+      let subError = null;
+
+      const subscriptionData = {
+        user_email: userEmail,
+        plan_type: planType,
+        status: 'active',
+        payment_id: payment.id.toString(),
+        amount: payment.transaction_amount,
+        expires_at: expirationDate.toISOString(),
+        mercadopago_payment_id: payment.id.toString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existingSub) {
+        const { data, error } = await supabaseAdmin
+          .from('subscriptions')
+          .update(subscriptionData)
+          .eq('user_email', userEmail)
+          .select()
+          .single();
+        subscription = data;
+        subError = error;
+      } else {
+        const { data, error } = await supabaseAdmin
+          .from('subscriptions')
+          .insert(subscriptionData)
+          .select()
+          .single();
+        subscription = data;
+        subError = error;
+      }
 
       if (subError) {
         console.error('❌ Erro ao criar/atualizar assinatura:', subError);
@@ -134,20 +208,13 @@ export async function POST(request: NextRequest) {
 
     // Processar pagamentos cancelados ou rejeitados
     if (payment.status === 'cancelled' || payment.status === 'rejected') {
-      const userEmail = payment.metadata?.user_email || payment.payer.email;
-
-      // Atualizar status da assinatura
-      const { error: updateError } = await supabaseAdmin
+      await supabaseAdmin
         .from('subscriptions')
         .update({
           status: 'cancelled',
           updated_at: new Date().toISOString(),
         })
         .eq('user_email', userEmail);
-
-      if (updateError) {
-        console.error('❌ Erro ao cancelar assinatura:', updateError);
-      }
 
       console.log('❌ Pagamento cancelado/rejeitado para:', userEmail);
     }
@@ -163,7 +230,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Permitir GET para verificar se o endpoint está funcionando
+// Verificar se o endpoint está funcionando
 export async function GET() {
   return NextResponse.json({
     message: 'Webhook do Mercado Pago está funcionando',
