@@ -24,54 +24,53 @@ export default function AuthScreen({ onComplete, onBack, mode: initialMode }: Au
 
     try {
       if (mode === 'signup') {
-        // Verificar se email já está cadastrado
-        const res = await fetch('/api/user/check-email', {
+        const res = await fetch('/api/user/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ name, email, password }),
         });
         const data = await res.json();
 
-        if (data.exists) {
-          setErrorMsg('Este e-mail já possui uma conta. Faça login para continuar.');
+        if (!res.ok) {
+          setErrorMsg(data.error || 'Erro ao criar conta. Tente novamente.');
           setLoading(false);
           return;
         }
 
+        // Cadastro OK — segue para o quiz
         onComplete(name, email);
+
       } else {
-        // Verificar se email existe para login
-        const res = await fetch('/api/user/check-email', {
+        const res = await fetch('/api/user/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email, password }),
         });
         const data = await res.json();
 
-        if (!data.exists) {
-          setErrorMsg('Nenhuma conta encontrada com este e-mail. Crie uma conta para começar.');
+        if (!res.ok) {
+          setErrorMsg(data.error || 'Erro ao fazer login. Tente novamente.');
           setLoading(false);
           return;
         }
 
-        onComplete(email.split('@')[0], email);
+        // Login OK — usa o nome vindo do banco
+        onComplete(data.user.name || email.split('@')[0], data.user.email);
       }
     } catch {
-      setErrorMsg('Ocorreu um erro. Tente novamente.');
+      setErrorMsg('Ocorreu um erro de conexão. Tente novamente.');
       setLoading(false);
     }
   };
 
   const canSubmit = () => {
     if (loading) return false;
-    if (mode === 'signup') {
-      return name && email && password;
-    }
-    return email && password;
+    if (mode === 'signup') return !!(name && email && password);
+    return !!(email && password);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+    <div className="min-h-screen bg-gray-900 text-white">
       <div className="max-w-md mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -84,7 +83,7 @@ export default function AuthScreen({ onComplete, onBack, mode: initialMode }: Au
           <h1 className="text-2xl font-bold">
             Shape <span className="text-[#FF6B35]">365</span>
           </h1>
-          <div className="w-12" /> {/* Spacer */}
+          <div className="w-12" />
         </div>
 
         {/* Title */}
@@ -93,8 +92,8 @@ export default function AuthScreen({ onComplete, onBack, mode: initialMode }: Au
             {mode === 'login' ? 'Bem-vindo de volta!' : 'Crie sua conta'}
           </h2>
           <p className="text-gray-400">
-            {mode === 'login' 
-              ? 'Entre para continuar sua jornada' 
+            {mode === 'login'
+              ? 'Entre para continuar sua jornada'
               : 'Comece sua transformação hoje'}
           </p>
         </div>
@@ -167,7 +166,7 @@ export default function AuthScreen({ onComplete, onBack, mode: initialMode }: Au
                 : 'bg-white/10 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {loading ? 'Verificando...' : mode === 'login' ? 'Entrar' : 'Criar conta'}
+            {loading ? 'Aguarde...' : mode === 'login' ? 'Entrar' : 'Criar conta'}
           </button>
         </form>
 

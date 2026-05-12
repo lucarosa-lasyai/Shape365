@@ -99,7 +99,8 @@ export default function Shape365() {
 
   const handleAuthComplete = async (name: string, email: string) => {
     if (authMode === 'login') {
-      // Login - verificar quiz no Supabase (fonte de verdade)
+      // Login já foi validado pelo AuthScreen via /api/user/login
+      // Aqui apenas carregamos o perfil e verificamos o estado do quiz
       const baseProfile: UserProfile = {
         name,
         email,
@@ -112,24 +113,12 @@ export default function Shape365() {
         hasSubscription: false,
       };
 
-      // Recuperar perfil local como base (pode ter dados extras como assinatura)
       const savedProfile = localStorage.getItem('shape365-profile');
       const localProfile = savedProfile ? JSON.parse(savedProfile) : null;
       const mergedProfile = localProfile?.email === email ? { ...baseProfile, ...localProfile } : baseProfile;
 
-      // Garantir que o perfil existe na tabela profiles (upsert silencioso)
       try {
-        await fetch('/api/user/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email }),
-        });
-      } catch (err) {
-        console.error('Erro ao garantir perfil no login:', err);
-      }
-
-      try {
-        // Verificar quiz no Supabase
+        // Verificar estado do quiz no Supabase (fonte de verdade)
         const quizRes = await fetch('/api/quiz/check', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -163,10 +152,10 @@ export default function Shape365() {
           return;
         }
       } catch (error) {
-        console.error('Erro ao verificar quiz no Supabase:', error);
+        console.error('Erro ao verificar quiz:', error);
       }
 
-      // Fallback: usar dados locais se a API falhar
+      // Fallback: dados locais se a API falhar
       setUserProfile(mergedProfile);
       if (mergedProfile.hasSubscription) {
         setCurrentScreen('home');
@@ -176,8 +165,10 @@ export default function Shape365() {
       } else {
         setCurrentScreen('quiz');
       }
+
     } else {
-      // Signup - novo usuário
+      // Signup já foi feito pelo AuthScreen via /api/user/register
+      // Novo usuário sempre vai direto para o quiz
       const newProfile: UserProfile = {
         name,
         email,
@@ -192,19 +183,6 @@ export default function Shape365() {
 
       setUserProfile(newProfile);
       localStorage.setItem('shape365-profile', JSON.stringify(newProfile));
-
-      // Registrar usuário na tabela profiles
-      try {
-        await fetch('/api/user/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email }),
-        });
-      } catch (err) {
-        console.error('Erro ao registrar perfil:', err);
-      }
-
-      // Novo usuário sempre vai para o quiz
       setCurrentScreen('quiz');
     }
   };
