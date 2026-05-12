@@ -97,6 +97,12 @@ export default function Shape365() {
     setCurrentScreen('landing');
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('shape365-profile');
+    setUserProfile(null);
+    setCurrentScreen('landing');
+  };
+
   const handleAuthComplete = async (name: string, email: string) => {
     if (authMode === 'login') {
       // Login já foi validado pelo AuthScreen via /api/user/login
@@ -401,6 +407,7 @@ export default function Shape365() {
         <ResultScreen
           answers={userProfile.quizAnswers}
           onContinue={handleResultContinue}
+          onLogout={handleLogout}
         />
       )}
 
@@ -410,6 +417,7 @@ export default function Shape365() {
           onBack={() => setCurrentScreen('result')}
           userEmail={userProfile?.email}
           onRetakeQuiz={handleRetakeQuiz}
+          onLogout={handleLogout}
         />
       )}
 

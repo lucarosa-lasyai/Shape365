@@ -1,19 +1,29 @@
 'use client';
 
 import { QuizAnswers } from '../types';
-import { Lock } from 'lucide-react';
+import { Lock, LogOut } from 'lucide-react';
 
 interface ResultScreenProps {
   answers: QuizAnswers;
   onContinue: () => void;
+  onLogout?: () => void;
 }
 
-export default function ResultScreen({ answers, onContinue }: ResultScreenProps) {
+export default function ResultScreen({ answers, onContinue, onLogout }: ResultScreenProps) {
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-4 py-12">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="relative text-center mb-12">
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="absolute right-0 top-0 flex items-center gap-2 px-4 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Sair
+            </button>
+          )}
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Seu plano personalizado está pronto
           </h1>

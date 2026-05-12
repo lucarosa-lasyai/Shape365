@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Sparkles, TrendingUp, MessageCircle, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Check, Sparkles, TrendingUp, MessageCircle, ArrowLeft, ExternalLink, LogOut } from 'lucide-react';
 import { useState } from 'react';
 
 interface PlansScreenProps {
@@ -8,9 +8,10 @@ interface PlansScreenProps {
   onBack?: () => void;
   userEmail?: string;
   onRetakeQuiz?: () => void;
+  onLogout?: () => void;
 }
 
-export default function PlansScreen({ onSubscribe, onBack, userEmail, onRetakeQuiz }: PlansScreenProps) {
+export default function PlansScreen({ onSubscribe, onBack, userEmail, onRetakeQuiz, onLogout }: PlansScreenProps) {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'semester' | 'annual'>('annual');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -123,14 +124,25 @@ export default function PlansScreen({ onSubscribe, onBack, userEmail, onRetakeQu
                 Comece sua transformação hoje mesmo
               </p>
             </div>
-            {onRetakeQuiz && (
-              <button
-                onClick={onRetakeQuiz}
-                className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Refazer Quiz
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {onRetakeQuiz && (
+                <button
+                  onClick={onRetakeQuiz}
+                  className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Refazer Quiz
+                </button>
+              )}
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sair
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
