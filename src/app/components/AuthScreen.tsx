@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Mail, Lock, User } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, AlertCircle } from 'lucide-react';
 
 interface AuthScreenProps {
   onComplete: (name: string, email: string) => void;
@@ -14,21 +14,56 @@ export default function AuthScreen({ onComplete, onBack, mode: initialMode }: Au
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Simular autenticação
-    if (mode === 'login') {
-      // Para login, usar email como nome se não tiver nome salvo
-      onComplete(email.split('@')[0], email);
-    } else {
-      // Para signup, usar o nome fornecido
-      onComplete(name, email);
+    setErrorMsg('');
+    setLoading(true);
+
+    try {
+      if (mode === 'signup') {
+        // Verificar se email já está cadastrado
+        const res = await fetch('/api/user/check-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+
+        if (data.exists) {
+          setErrorMsg('Este e-mail já possui uma conta. Faça login para continuar.');
+          setLoading(false);
+          return;
+        }
+
+        onComplete(name, email);
+      } else {
+        // Verificar se email existe para login
+        const res = await fetch('/api/user/check-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+
+        if (!data.exists) {
+          setErrorMsg('Nenhuma conta encontrada com este e-mail. Crie uma conta para começar.');
+          setLoading(false);
+          return;
+        }
+
+        onComplete(email.split('@')[0], email);
+      }
+    } catch {
+      setErrorMsg('Ocorreu um erro. Tente novamente.');
+      setLoading(false);
     }
   };
 
   const canSubmit = () => {
+    if (loading) return false;
     if (mode === 'signup') {
       return name && email && password;
     }
@@ -116,23 +151,30 @@ export default function AuthScreen({ onComplete, onBack, mode: initialMode }: Au
             </div>
           </div>
 
+          {errorMsg && (
+            <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
+              <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+              <p className="text-sm text-red-300">{errorMsg}</p>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={!canSubmit()}
             className={`w-full py-4 font-bold text-lg rounded-xl transition-all ${
               canSubmit()
-                ? 'bg-gradient-to-r from-[#FF6B35] to-[#FF5520] text-white hover:shadow-2xl hover:scale-105'
+                ? 'bg-[#FF6B35] text-white hover:shadow-2xl hover:scale-105'
                 : 'bg-white/10 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {mode === 'login' ? 'Entrar' : 'Criar conta'}
+            {loading ? 'Verificando...' : mode === 'login' ? 'Entrar' : 'Criar conta'}
           </button>
         </form>
 
         {/* Toggle mode */}
         <div className="text-center">
           <button
-            onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+            onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setErrorMsg(''); }}
             className="text-gray-400 hover:text-white transition-all"
           >
             {mode === 'login' ? (
