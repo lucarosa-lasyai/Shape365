@@ -44,3 +44,7 @@ temp-*
 .DS_Store.npm/
 dist/
 .lasy/
+
+# Lasy internal
+.claude
+.lasy
