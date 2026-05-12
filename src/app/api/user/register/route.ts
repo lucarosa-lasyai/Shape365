@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .insert({
         email,
-        full_name: name || email.split('@')[0],
+        name: name || email.split('@')[0],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
