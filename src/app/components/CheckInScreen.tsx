@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Send, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import type { UserProfile } from '@/app/types';
 
 interface CheckInScreenProps {
   onBack: () => void;
-  userProfile: Record<string, unknown> | null;
+  userProfile: UserProfile | null;
 }
 
 interface CheckInData {
